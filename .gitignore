@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Local data
+data/
+*.sqlite3
+*.json
+
+# S3 bucket configurations or keys
+*.boto
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Tests and coverage reports
+.coverage
+*.cover
+.hypothesis/
+
+# IDE configurations
+.idea/
+.vscode/
+
+# Miscellaneous
+*.swp
