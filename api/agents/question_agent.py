@@ -1,9 +1,8 @@
-from autogen.agentchat import AssistantAgent, GroupChat
+import autogen
+from config.gpt_config import gpt4_config
 
-
-# Define the Question Agent
-class QuestionAgent(AssistantAgent):
-    def generate_questions(self, job_description: str) -> list[str]:
-        prompt = f"Generate three interview questions based on this job description:\n{job_description}"
-        response = self.send(prompt)
-        return response.splitlines()
+question_agent = autogen.AssistantAgent(
+    name="QuestionAgent",
+    llm_config=gpt4_config,
+    system_message="""You are the Question Agent. Given a job description, generate three interview questions to assess relevant skills. All question should be on theory.""",
+)

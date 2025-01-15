@@ -1,14 +1,9 @@
-from autogen import AssistantAgent
+import autogen
+from config.gpt_config import gpt4_config
 
-
-class EvaluationAgent(AssistantAgent):
-    def evaluate_responses(self, questions: list[str], responses: list[str]) -> dict:
-        scores = []
-        feedback = []
-        for question, response in zip(questions, responses):
-            prompt = f"Evaluate this response:\nQuestion: {question}\nResponse: {response}"
-            result = self.run(prompt).splitlines()
-            scores.append(int(result[0]))
-            feedback.append(result[1])
-        return {"scores": scores, "feedback": feedback}
+evaluation_agent = autogen.AssistantAgent(
+    name="EvaluationAgent",
+    llm_config=gpt4_config,
+    system_message="""You are the Evaluation Agent. Given a candidate's responses to questions, provide a score (1–5) and feedback for each response. If candidate do not know answer it is 1.""",
+)
 
