@@ -1,12 +1,11 @@
 from sqlalchemy.orm import Session
-from utils.models import Candidate
-from utils.storage import get_db
+from api.models import Candidate
 
 
 def prepopulate_candidates(db: Session):
     candidates_data = [
         {"candidate_id": "1", "name": "Alice Johnson", "email": "alice@example.com",
-         "job_title": "Junior Python Backend Developer"},
+         "job_title": "Middle Python Backend Developer"},
         {"candidate_id": "2", "name": "Bob Smith", "email": "bob@example.com",
          "job_title": "Junior React Frontend Developer"},
         {"candidate_id": "3", "name": "Charlie Lee", "email": "charlie@example.com",
@@ -14,7 +13,7 @@ def prepopulate_candidates(db: Session):
         {"candidate_id": "4", "name": "Diana Moore", "email": "diana@example.com",
          "job_title": "Product Manager"},
         {"candidate_id": "5", "name": "Eve Davis", "email": "eve@example.com",
-         "job_title": "Junior QA Engineer"}
+         "job_title": "Senior QA Engineer"}
     ]
 
     for candidate in candidates_data:
@@ -23,4 +22,3 @@ def prepopulate_candidates(db: Session):
             db_candidate = Candidate(**candidate)
             db.add(db_candidate)
     db.commit()
-    print("Pre-populated candidates.")

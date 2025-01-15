@@ -1,6 +1,9 @@
 import os
 import random
 import time
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Define LLM configuration
 gpt4_config = {
