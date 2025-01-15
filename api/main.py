@@ -1,5 +1,7 @@
 import time
 import random
+from typing import List, Optional, Dict
+
 from fastapi import FastAPI, HTTPException, Body, Depends, Query
 import os
 from dotenv import load_dotenv
@@ -178,19 +180,18 @@ async def start_task(candidate_id: int, db: Session = Depends(get_db)):
 
 # Continue the chat
 @app.post("/continue_chat/{interview_log_id}")
-async def continue_chat(interview_log_id: int, db: Session = Depends(get_db)):
+async def continue_chat(interview_log_id: int, responses: Dict[str, list[str]] = Body(...), db: Session = Depends(get_db)):
     try:
         # Fetch the interview log based on interview_log_id
         interview_log = db.query(InterviewLog).filter(InterviewLog.id == interview_log_id).first()
         if not interview_log:
             raise HTTPException(status_code=404, detail="Interview log not found")
-
-        print(interview_log_id)
-        print([i.interview_log_id for i in db.query(InterviewLogQuestion).all()])
         # Fetch the questions associated with this interview log
         interview_log_questions = db.query(InterviewLogQuestion).filter(InterviewLogQuestion.interview_log_id == interview_log_id).all()
         if not interview_log_questions:
             raise HTTPException(status_code=404, detail="No questions found for this interview log")
+
+        responses = responses['responses']
 
         # Retrieve the question texts using the question_ids from the InterviewLogQuestion table
         question_texts = []
@@ -204,11 +205,6 @@ async def continue_chat(interview_log_id: int, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="No valid questions found")
 
         # Example responses (replace with actual responses as needed)
-        responses = [
-            "Django is a full-stack framework with built-in features, while Flask is lightweight and more flexible.",
-            "ORM in Django provides an abstraction layer to interact with the database using Python objects.",
-            "Using select_related and prefetch_related helps optimize database queries in Django."
-        ]
 
         # Format the user message by combining questions and their respective responses
         user_message = ", ".join([f"Response to question ('{question}'): {response}"
