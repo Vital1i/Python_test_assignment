@@ -1,4 +1,3 @@
-# utils/schemas.py
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -57,10 +56,10 @@ class EvaluationResponse(EvaluationBase):
 
 class InterviewLogBase(BaseModel):
     job_title: str
-    questions: str  # Store as JSON string
-    responses: str  # Store as JSON string
-    scores: str  # Store as JSON string
-    feedback: str  # Store feedback summary
+    questions: str
+    responses: str
+    scores: str
+    feedback: str
 
 
 class InterviewLogCreate(InterviewLogBase):
