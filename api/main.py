@@ -1,12 +1,12 @@
 import time
 import random
-from fastapi import FastAPI, HTTPException, Body, Depends
+from fastapi import FastAPI, HTTPException, Body, Depends, Query
 import os
 from dotenv import load_dotenv
 import autogen
 from sqlalchemy.orm import Session
-
-from utils.models import Candidate
+import json
+from utils.models import Candidate, InterviewLog, Question, InterviewLogQuestion
 from utils.prepopulate import prepopulate_candidates
 from utils.schemas import CandidateResponse
 from utils.storage import get_db, create_all_tables
@@ -41,18 +41,28 @@ question_agent = autogen.AssistantAgent(
 evaluation_agent = autogen.AssistantAgent(
     name="EvaluationAgent",
     llm_config=gpt4_config,
-    system_message="""You are the Evaluation Agent. Given a candidate's responses to questions, provide a score (1–5) and feedback for each response.""",
+    system_message="""You are the Evaluation Agent. Given a candidate's responses to questions, provide a score (1–5) and feedback for each response. If candidate do not know answer it is 1.""",
 )
 
 validator = autogen.AssistantAgent(
     name="Validator",
     llm_config=gpt4_config,
-    system_message="""You are the Validator. Validate the scores and feedback, then generate a summary of the interview results.""",
+    system_message="""
+You are the Validation Agent. Your tasks are as follows:
+1. Review the scores and feedback provided by the Evaluation Agent.
+2. Confirm or adjust the scores based on the responses and feedback.
+3. Generate a concise summary report that includes:
+   - The interview questions
+   - The candidate's responses
+   - The scores for each response
+   - Feedback for each response
+4. Generate overall conclusion of interview
+5. Ensure the report is clear, professional, and free of errors.
+"""
 )
 
 
 def state_transition_question(last_speaker, groupchat):
-
     messages = groupchat.messages
 
     if last_speaker is initializer:
@@ -61,6 +71,7 @@ def state_transition_question(last_speaker, groupchat):
     elif last_speaker is question_agent:
         # Question Agent --> Evaluation Agent
         return None
+
 
 # State transition logic
 def state_transition_answer(last_speaker, groupchat):
@@ -80,7 +91,7 @@ def state_transition_answer(last_speaker, groupchat):
 # GroupChat setup
 
 groupchat = autogen.GroupChat(
-    agents=[initializer, evaluation_agent,validator],
+    agents=[initializer, evaluation_agent, validator],
     messages=[],
     max_round=20,
     speaker_selection_method=state_transition_answer,
@@ -90,10 +101,18 @@ manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
 
 
 # Initialize the chat
-@app.post("/start_chat/")
-async def start_chat():
+@app.post("/start_task/{candidate_id}")
+async def start_task(candidate_id: int, db: Session = Depends(get_db)):
     try:
-        initializer_message = f"Job description: Junior Django Developer"
+        # Fetch candidate by ID
+        candidate = db.query(Candidate).filter(Candidate.candidate_id == candidate_id).first()
+        if not candidate:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+
+        candidate_job_title = candidate.job_title
+
+        # Initialize chat to generate questions
+        initializer_message = f"Job description: {candidate_job_title}"
 
         groupchat_getting_messages = autogen.GroupChat(
             agents=[initializer, question_agent],
@@ -107,35 +126,126 @@ async def start_chat():
         initializer.initiate_chat(
             manager1, message=initializer_message
         )
-        # Extract initial questions generated
-        questions = [
+
+        # Extract generated questions and split them into individual questions
+        question_text = [
             msg["content"] for msg in groupchat_getting_messages.messages if msg["name"] == "QuestionAgent"
         ]
-        print(i for i in groupchat_getting_messages.messages)
-        return {"message": "Chat started successfully", "questions": questions}
+
+        # Split each question into a list of questions by newline
+        questions = []
+        for text in question_text:
+            questions.extend(text.split("\n"))  # Split the text into individual questions
+
+        # Create separate Question objects for each question
+        question_objects = []
+        for question_text in questions:
+            question = Question(text=question_text)
+            db.add(question)
+            db.flush()  # Get the ID of the question after insertion
+            question_objects.append(question)
+
+        # Save the interview log to the database
+        interview_log = InterviewLog(
+            candidate_id=candidate.id,  # Link interview to candidate
+            job_title=candidate_job_title,
+            responses="[]",  # Placeholder for responses
+            scores="[]",  # Placeholder for scores
+            feedback="[]",  # Placeholder for feedback
+        )
+        db.add(interview_log)
+        db.commit()
+        print(interview_log.id)
+        for question in question_objects:
+            interview_log_question = InterviewLogQuestion(
+                interview_log_id=interview_log.id,
+                question_id=question.id
+            )
+            db.add(interview_log_question)
+
+        db.commit()
+
+        # Return the generated questions and interview log details
+        return {
+            "message": "Questions generated successfully",
+            "questions": [{"id": q.id, "text": q.text} for q in question_objects],  # Include each question with its ID
+            "interview_log_id": interview_log.id
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        db.rollback()  # Rollback in case of any errors
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 # Continue the chat
-@app.post("/continue_chat")
-async def continue_chat(questions: list[str] = Body(...), responses: list[str] = Body(...)):
+@app.post("/continue_chat/{interview_log_id}")
+async def continue_chat(interview_log_id: int, db: Session = Depends(get_db)):
     try:
-        # Send the user responses along with the questions
-        # Both questions and responses will be used in the conversation
-        user_message = (f"Response to question ('{questions[0]}'): {responses[0]},"
-                        f"Response to question ('{questions[1]}'): {responses[1]},"
-                        f"Response to question ('{questions[2]}'): {responses[2]},")
+        # Fetch the interview log based on interview_log_id
+        interview_log = db.query(InterviewLog).filter(InterviewLog.id == interview_log_id).first()
+        if not interview_log:
+            raise HTTPException(status_code=404, detail="Interview log not found")
+
+        print(interview_log_id)
+        print([i.interview_log_id for i in db.query(InterviewLogQuestion).all()])
+        # Fetch the questions associated with this interview log
+        interview_log_questions = db.query(InterviewLogQuestion).filter(InterviewLogQuestion.interview_log_id == interview_log_id).all()
+        if not interview_log_questions:
+            raise HTTPException(status_code=404, detail="No questions found for this interview log")
+
+        # Retrieve the question texts using the question_ids from the InterviewLogQuestion table
+        question_texts = []
+        for interview_log_question in interview_log_questions:
+            question = db.query(Question).filter(Question.id == interview_log_question.question_id).first()
+            if question:
+                question_texts.append(question.text)
+
+        # Make sure we have questions available
+        if not question_texts:
+            raise HTTPException(status_code=404, detail="No valid questions found")
+
+        # Example responses (replace with actual responses as needed)
+        responses = [
+            "Django is a full-stack framework with built-in features, while Flask is lightweight and more flexible.",
+            "ORM in Django provides an abstraction layer to interact with the database using Python objects.",
+            "Using select_related and prefetch_related helps optimize database queries in Django."
+        ]
+
+        # Format the user message by combining questions and their respective responses
+        user_message = ", ".join([f"Response to question ('{question}'): {response}"
+                                  for question, response in zip(question_texts, responses)])
+
+        # Send the user responses along with the questions in the group chat
         initializer.initiate_chat(manager, message=user_message)
 
-        # Now, run the group chat until it reaches the Validator
-        print(i for i in groupchat.messages)
-        # Extract the final summary generated by the Validator
+        # Run the group chat and get the final summary from the Validator agent
         final_summary = [
             msg["content"] for msg in groupchat.messages if msg["name"] == "Validator"
-        ][-1]
+        ][-1]  # Get the last message from the Validator agent
+        print(groupchat.messages)
+        final_summary = final_summary.split('\n\n')
+
+        # Save the responses and feedback to the interview log
+        interview_log.responses = json.dumps(responses)
+        interview_log.scores = json.dumps(
+            [
+                int(msg["content"].split(":")[1].strip())  # Assuming scores follow a specific pattern
+                for msg in groupchat.messages
+                if msg["name"] == "Evaluator"
+            ]
+        )
+        interview_log.feedback = json.dumps(
+            [
+                msg["content"]
+                for msg in groupchat.messages
+                if msg["name"] == "Evaluator"
+            ]
+        )
+
+        # Commit changes to the database
+        db.commit()
 
         return {"message": "Interview completed", "summary": final_summary}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -162,5 +272,3 @@ async def get_candidate(candidate_id: str, db: Session = Depends(get_db)):
     if candidate is None:
         raise HTTPException(status_code=404, detail="Candidate not found")
     return candidate
-
-
