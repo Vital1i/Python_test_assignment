@@ -1,3 +1,4 @@
+import asyncio
 import time
 import random
 from typing import List, Optional, Dict
@@ -5,6 +6,8 @@ from fastapi import FastAPI, HTTPException, Body, Depends, Query
 import os
 from dotenv import load_dotenv
 import autogen
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 import json
 from save_data_to_file import save_to_local
@@ -103,6 +106,7 @@ manager = autogen.GroupChatManager(groupchat=groupchat, llm_config=gpt4_config)
 
 
 # Initialize the chat
+# Initialize the chat
 @app.post("/start_task/{candidate_id}")
 async def start_task(candidate_id: int, db: Session = Depends(get_db)):
     try:
@@ -168,7 +172,7 @@ async def start_task(candidate_id: int, db: Session = Depends(get_db)):
 
         questions_data = {"questions": [{"id": q.id, "text": q.text} for q in question_objects]}
         file_name = f"interview_{interview_log.id}_questions_candidate№{candidate_id}.json"
-        save_to_local(file_name, questions_data)  # Save the questions as a JSON file
+        await save_to_local(file_name, questions_data)  # Save the questions as a JSON file
         # Return the generated questions and interview log details
         return {
             "message": "Questions generated successfully",
@@ -225,7 +229,7 @@ async def continue_chat(interview_log_id: int, responses: Dict[str, list[str]] =
         interview_log.responses = json.dumps(responses)
 
         file_name = f"interview_{interview_log_id}_data.json"
-        save_to_local(file_name, final_summary)  # Save the responses, feedback, and scores
+        await save_to_local(file_name, final_summary)  # Save the responses, feedback, and scores
 
         # Commit changes to the database
         db.commit()
@@ -234,6 +238,8 @@ async def continue_chat(interview_log_id: int, responses: Dict[str, list[str]] =
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 @app.on_event("startup")

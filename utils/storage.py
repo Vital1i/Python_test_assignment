@@ -33,4 +33,3 @@ def get_db():
 def create_all_tables():
     # This will create the tables inside the existing database file
     Base.metadata.create_all(bind=engine)
-
