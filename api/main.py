@@ -1,17 +1,17 @@
 import time
 import random
 from typing import List, Optional, Dict
-
 from fastapi import FastAPI, HTTPException, Body, Depends, Query
 import os
 from dotenv import load_dotenv
 import autogen
 from sqlalchemy.orm import Session
 import json
+from save_data_to_file import save_to_local
 from utils.models import Candidate, InterviewLog, Question, InterviewLogQuestion
 from utils.prepopulate import prepopulate_candidates
 from utils.schemas import CandidateResponse
-from utils.storage import get_db, create_all_tables
+from utils.storage import get_db, create_all_tables, Base, engine
 
 load_dotenv()
 
@@ -157,7 +157,6 @@ async def start_task(candidate_id: int, db: Session = Depends(get_db)):
         )
         db.add(interview_log)
         db.commit()
-        print(interview_log.id)
         for question in question_objects:
             interview_log_question = InterviewLogQuestion(
                 interview_log_id=interview_log.id,
@@ -167,6 +166,9 @@ async def start_task(candidate_id: int, db: Session = Depends(get_db)):
 
         db.commit()
 
+        questions_data = {"questions": [{"id": q.id, "text": q.text} for q in question_objects]}
+        file_name = f"interview_{interview_log.id}_questions_candidate№{candidate_id}.json"
+        save_to_local(file_name, questions_data)  # Save the questions as a JSON file
         # Return the generated questions and interview log details
         return {
             "message": "Questions generated successfully",
@@ -217,25 +219,13 @@ async def continue_chat(interview_log_id: int, responses: Dict[str, list[str]] =
         final_summary = [
             msg["content"] for msg in groupchat.messages if msg["name"] == "Validator"
         ][-1]  # Get the last message from the Validator agent
-        print(groupchat.messages)
         final_summary = final_summary.split('\n\n')
 
         # Save the responses and feedback to the interview log
         interview_log.responses = json.dumps(responses)
-        interview_log.scores = json.dumps(
-            [
-                int(msg["content"].split(":")[1].strip())  # Assuming scores follow a specific pattern
-                for msg in groupchat.messages
-                if msg["name"] == "Evaluator"
-            ]
-        )
-        interview_log.feedback = json.dumps(
-            [
-                msg["content"]
-                for msg in groupchat.messages
-                if msg["name"] == "Evaluator"
-            ]
-        )
+
+        file_name = f"interview_{interview_log_id}_data.json"
+        save_to_local(file_name, final_summary)  # Save the responses, feedback, and scores
 
         # Commit changes to the database
         db.commit()

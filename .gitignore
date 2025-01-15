@@ -43,3 +43,7 @@ build/
 # Miscellaneous
 *.swp
 .cache
+
+
+#DATA
+interviews/
