@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 import autogen
 from sqlalchemy.orm import Session
 import json
-
 from api.agents.initializer import initializer
 from api.groupchats.groupchat_for_answering import groupchat_for_answering
 from api.groupchats.groupchat_for_questions import groupchat_for_questions
@@ -21,8 +20,8 @@ app = FastAPI()
 
 
 # Initialize the chat
-@app.post("/start_task/{candidate_id}")
-async def start_task(candidate_id: int, db: Session = Depends(get_db)):
+@app.post("/start_chat/{candidate_id}")
+async def start_chat(candidate_id: int, db: Session = Depends(get_db)):
     # Fetch candidate by ID
     candidate = db.query(Candidate).filter(Candidate.candidate_id == candidate_id).first()
     if not candidate:
