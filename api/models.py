@@ -9,7 +9,7 @@ class Candidate(Base):
     __tablename__ = "candidates"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    candidate_id = Column(String, unique=True, index=True)  # Unique candidate ID
+    candidate_id = Column(String, unique=True, index=True)
     name = Column(String, index=True)
     email = Column(String, index=True)
     job_title = Column(String)
@@ -28,7 +28,11 @@ class Question(Base):
 
     # Relationships
     evaluations = relationship("Evaluation", back_populates="question")
-    interviews = relationship("InterviewLog", secondary="interview_log_questions", back_populates="questions_list")
+    interviews = relationship(
+        "InterviewLog",
+        secondary="interview_log_questions",
+        back_populates="questions_list",
+    )
 
 
 class Evaluation(Base):
@@ -61,16 +65,17 @@ class InterviewLog(Base):
     evaluations = relationship("Evaluation", back_populates="interview_log")
 
     # Relationship to Question model (questions associated with the interview)
-    questions_list = relationship("Question", secondary="interview_log_questions", back_populates="interviews")
+    questions_list = relationship(
+        "Question",
+        secondary="interview_log_questions",
+        back_populates="interviews"
+    )
 
 
 class InterviewLogQuestion(Base):
     __tablename__ = "interview_log_questions"
 
-    interview_log_id = Column(Integer, ForeignKey("interview_logs.id"), primary_key=True)
+    interview_log_id = Column(
+        Integer, ForeignKey("interview_logs.id"), primary_key=True
+    )
     question_id = Column(Integer, ForeignKey("questions.id"), primary_key=True)
-
-
-
-
-

@@ -5,7 +5,6 @@ from api.agents.validation_agent import validator
 
 # State transition logic for analyzing answering
 def state_transition_answer(last_speaker, groupchat):
-    messages = groupchat.messages
 
     if last_speaker is initializer:
         return evaluation_agent
