@@ -25,7 +25,16 @@ app = FastAPI()
 # Initialize the chat
 @app.post("/start_chat/{candidate_id}/")
 async def start_chat(candidate_id: int, db: Session = Depends(get_db)):
+    """
+        Starts a new interview chat session by generating questions for a candidate.
 
+        Args:
+            candidate_id (int): The ID of the candidate.
+            db (Session): The database session dependency.
+
+        Returns:
+            dict: A message confirming question generation and the generated questions.
+    """
     # Fetch candidate by ID
     candidate = (
         db.query(Candidate).filter(
@@ -111,6 +120,17 @@ async def continue_chat(
     responses: Dict[str, list[str]] = Body(...),
     db: Session = Depends(get_db),
 ):
+    """
+        Continues an interview session by processing candidate responses and generating feedback.
+
+        Args:
+            interview_log_id (int): The ID of the interview log.
+            responses (dict): Candidate responses to interview questions.
+            db (Session): The database session dependency.
+
+        Returns:
+            dict: A message confirming completion and the summary of the interview.
+    """
     # Fetch the interview log based on interview_log_id
     interview_log = (
         db.query(InterviewLog).filter(
@@ -170,9 +190,7 @@ async def continue_chat(
         msg["content"]
         for msg in groupchat_for_answering.messages
         if msg["name"] == "Validator"
-    ][
-        -1
-    ]  # Get the last message from the Validator agent
+    ][-1]  # Get the last message from the Validator agent
     final_summary = final_summary.split("\n\n")
 
     # Save the responses and feedback to the interview log
@@ -191,6 +209,12 @@ async def continue_chat(
 
 @app.on_event("startup")
 async def startup_event():
+    """
+        Event handler triggered on application startup.
+
+        - Pre-populates candidates in the database.
+        - Creates database tables if they do not exist.
+    """
     # Pre-populate the candidates in the database
     db = next(get_db())
     prepopulate_candidates(db)
@@ -201,12 +225,31 @@ async def startup_event():
 
 @app.get("/candidates/", response_model=list[CandidateResponse])
 async def get_candidates(db: Session = Depends(get_db)):
+    """
+        Fetches a list of all candidates.
+
+        Args:
+            db (Session): The database session dependency.
+
+        Returns:
+            list: A list of candidate details.
+    """
     candidates = db.query(Candidate).all()
     return candidates
 
 
 @app.get("/candidates/{candidate_id}/", response_model=CandidateResponse)
 async def get_candidate(candidate_id: str, db: Session = Depends(get_db)):
+    """
+        Fetches details for a specific candidate.
+
+        Args:
+            candidate_id (str): The ID of the candidate.
+            db (Session): The database session dependency.
+
+        Returns:
+            dict: Candidate details.
+    """
     candidate = (
         db.query(Candidate).filter(
             Candidate.candidate_id == candidate_id
