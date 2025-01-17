@@ -17,26 +17,89 @@ This project demonstrates a FastAPI-based application for managing candidate int
 Ensure you have Python 3.10+ installed on your system.
 
 ### Installation
+
+Follow these steps to install and run the application on Windows and macOS.
+
+---
+
+#### **Windows Installation**
+
 1. **Clone the Repository**
    ```bash
    git clone https://github.com/Vital1i/Python_test_assignment
    cd Python_test_assignment
    ```
 
-2. **Install Dependencies**
+2. **Create a Virtual Environment**
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+3. **Install Dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the Application**
+4. **Create a `.env` File**
+   Create a `.env` file in the project root and add your `OPENAI_API_KEY`:
+   ```plaintext
+   OPENAI_API_KEY=<your_openai_api_key>
+   ```
+   You can obtain your OpenAI API key by following the instructions [here](https://platform.openai.com/signup/).
+
+5. **Run the Application**
    ```bash
    uvicorn api.main:app --port=8000 --reload
    ```
 
-4. **Access API Documentation**
+6. **Access API Documentation**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore the API endpoints.
 
 ---
+
+#### **macOS Installation**
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/Vital1i/Python_test_assignment
+   cd Python_test_assignment
+   ```
+
+2. **Create a Virtual Environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Create a `.env` File**
+   Create a `.env` file in the project root and add your `OPENAI_API_KEY`:
+   ```plaintext
+   OPENAI_API_KEY=<your_openai_api_key>
+   ```
+   You can obtain your OpenAI API key by following the instructions [here](https://platform.openai.com/signup/).
+
+5. **Run the Application**
+   ```bash
+   python3 -m uvicorn api.main:app --port=8000 --reload
+   ```
+
+6. **Access API Documentation**
+   Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore the API endpoints.
+
+---
+
+### Notes
+
+- Ensure you have `Python 3.10` or newer installed on your system.
+- If you encounter any issues with permissions, try running commands with `sudo` (macOS) or as Administrator (Windows).
+- To stop the application, press `Ctrl+C` in the terminal where the server is running.
+
 
 ## Usage
 
