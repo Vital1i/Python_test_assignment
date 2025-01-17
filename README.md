@@ -41,19 +41,59 @@ Follow these steps to install and run the application on Windows and macOS.
    pip install -r requirements.txt
    ```
 
-4. **Create a `.env` File**
+4. **Install Alembic for Database Migrations**
+   ```bash
+   pip install alembic
+   ```
+
+5. **Create a `.env` File**
    Create a `.env` file in the project root and add your `OPENAI_API_KEY`:
    ```plaintext
    OPENAI_API_KEY=<your_openai_api_key>
    ```
    You can obtain your OpenAI API key by following the instructions [here](https://platform.openai.com/signup/).
 
-5. **Run the Application**
+6. **Initialize Alembic**
+   Set up Alembic for database migrations:
+   ```bash
+   alembic init migrations
+   ```
+
+7. **Configure Alembic**
+   Update the `alembic.ini` file to set the `sqlalchemy.url` to your database URL (e.g., `sqlite:///../data/interview_system.db`).
+
+7. **Commit initial migration**
+   ```bash
+   alembic revision -m "Initial migration" 
+   ```
+8. **Go to migrations/env.py** and change `target_metadata = None` to 
+   ```bash
+   from api.models import Base
+   target_metadata = Base.metadata 
+   ```
+8. **Apply Migrations**
+   Apply the generated migration to create the database schema:
+   ```bash
+   alembic upgrade head
+   ```
+8. **Generate Initial Migration**
+   Create a migration script to generate the tables:
+   ```bash
+   alembic revision --autogenerate -m "Add all tables"
+   ```
+
+9. **Apply Migrations**
+   Apply the generated migration to create the database schema:
+   ```bash
+   alembic upgrade head
+   ```
+
+10. **Run the Application**
    ```bash
    uvicorn api.main:app --port=8000 --reload
    ```
 
-6. **Access API Documentation**
+11. **Access API Documentation**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore the API endpoints.
 
 ---
@@ -77,22 +117,50 @@ Follow these steps to install and run the application on Windows and macOS.
    pip install -r requirements.txt
    ```
 
-4. **Create a `.env` File**
+4. **Install Alembic for Database Migrations**
+   ```bash
+   pip install alembic
+   ```
+
+5. **Create a `.env` File**
    Create a `.env` file in the project root and add your `OPENAI_API_KEY`:
    ```plaintext
    OPENAI_API_KEY=<your_openai_api_key>
    ```
    You can obtain your OpenAI API key by following the instructions [here](https://platform.openai.com/signup/).
 
-5. **Run the Application**
+6. **Initialize Alembic**
+   Set up Alembic for database migrations:
+   ```bash
+   alembic init migrations
+   ```
+
+7. **Configure Alembic**
+   Update the `alembic.ini` file to set the `sqlalchemy.url` to your database URL (e.g., `sqlite:///./database.db`).
+
+8. **Generate Initial Migration**
+   Create a migration script to generate the tables:
+   ```bash
+   alembic revision --autogenerate -m "Initial migration"
+   ```
+
+9. **Apply Migrations**
+   Apply the generated migration to create the database schema:
+   ```bash
+   alembic upgrade head
+   ```
+
+10. **Run the Application**
    ```bash
    python3 -m uvicorn api.main:app --port=8000 --reload
    ```
 
-6. **Access API Documentation**
+11. **Access API Documentation**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore the API endpoints.
 
 ---
+
+
 
 ### Notes
 
