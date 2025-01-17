@@ -48,24 +48,18 @@ Follow these steps to install and run the application on Windows and macOS.
    ```
    You can obtain your OpenAI API key by following the instructions [here](https://platform.openai.com/signup/).
 
-5. **Generate Initial Migration**
-   Create a migration script to generate the tables:
-   ```bash
-   alembic revision --autogenerate -m "Initial migration"
-   ```
-
-6. **Apply Migrations**
+5. **Apply Migrations**
    Apply the generated migration to create the database schema:
    ```bash
    alembic upgrade head
    ```
 
-7. **Run the Application**
+6. **Run the Application**
    ```bash
    uvicorn api.main:app --port=8000 --reload
    ```
 
-8. **Access API Documentation**
+7. **Access API Documentation**
    Open your browser and navigate to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to explore the API endpoints.
 
 ---
